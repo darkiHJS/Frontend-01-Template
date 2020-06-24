@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		.container {
+			width: 601px;
+			font-size: 0;
+			/*margin-left: 50px;*/
+		}
+		.cell {
+			width: 5px;
+			height: 5px;
+			margin-bottom: 1px;
+			margin-right: 1px;
+			background-color: #ccc;
+			display: inline-block;
+			font-size: 0;
+		}
+		.btnGroup {
+			position: absolute;
+			top: 10px;
+			left: 650px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container" id="container">
+
+	</div>
+	<div class="btnGroup">
+		<button id="btn">保存路径</button>
+		<button id="clear">清理sessionStorage缓存</button><br/>
+		<button id="startPoint">选择起始点，默认[0,0]</button>
+		<button id="endPoint">选结束始点，默认[50,50]</button><br/>
+		<button id="findPath">开始寻路</button>
+	</div>
+
+	<script>
+		//启发式搜索
+		class Sorted {
+			constructor(data,compare){
+				this.data = data;
+				this.compare = compare;
+			}
+
+			take(){
+				if(!this.data.length)
+					return;
+				let min = this.data[0];
+				let minIndex = 0;
+				for(let i=0 ;i<this.data.length;i++){
+					if(this.compare(this.data[i],min)>0){
+						min = this.data[i];
+						minIndex = i;
+					}
+				}
+				this.data[minIndex] = this.data[this.data.length-1];
+				this.data.pop();
+				return min;
+			}
+
+			insert(da){
+				this.data.push(da)
+			}
+		}
+
+
+
+		let pattern = new Array(100*100).fill(0);
+		let isMouse = false;
+		let startPoint = [0,0],
+			endPoint = [50,50];
+		let selectStartPoint = false,
+			selectEndPoint = false;
+		let container = document.getElementById('container');
+		createCell();
+
+		function createCell(){
+			let isStoreSession = window.sessionStorage.getItem('pattern');
+			if(isStoreSession){
+				isStoreSession = JSON.parse(isStoreSession);
+				pattern = isStoreSession;
+			}
+			for(let i=0; i<100;i++){
+				for(let j=0; j<100;j++){
+					let cell = document.createElement('div');
+					let order = i*100+j;
+					let y = i;
+					cell.className = 'cell';
+					if(isStoreSession){
+						let number = isStoreSession[order];
+						if(number == 5){
+							cell.style.backgroundColor = '#000'
+						}
+					}
+
+					document.getElementById('container').appendChild(cell);
+					cell.addEventListener('mousemove',(event)=>{
+						if(isMouse && !selectStartPoint && !selectEndPoint){
+							cell.style.backgroundColor = '#000'
+							pattern[order] = 5;
+						}
+					})
+					cell.addEventListener('click',(event)=>{
+						if(selectStartPoint){
+							startPoint = [j,i];
+							cell.style.backgroundColor = 'blue';
+							selectStartPoint = false;
+						}
+						if(selectEndPoint){
+							endPoint = [j,i];
+							console.log('end')
+							cell.style.backgroundColor = 'yellow'
+						}
+					})
+				}
+			}
+		}
+
+		function clear(){
+			let domChildren = document.getElementById('container').children;
+			for(let i=0; i<pattern.length-1;i++){
+				if(pattern[i]!=0){
+					domChildren[i].style.backgroundColor = '#ccc'
+				}
+				pattern[i] = 0;
+			}
+		}
+		document.getElementById('clear').addEventListener('click',()=>{
+			window.sessionStorage.clear();
+			clear();
+		});
+		document.getElementById('findPath').addEventListener('click',()=>{
+			console.log(startPoint,endPoint)
+			path(pattern,startPoint,endPoint);
+		});
+		document.getElementById('startPoint').addEventListener('click',()=>{
+			selectStartPoint = true;
+		});
+		document.getElementById('endPoint').addEventListener('click',()=>{
+			selectEndPoint = true;
+		});
+
+		document.getElementById('btn').addEventListener('click',()=>{
+			window.sessionStorage.setItem('pattern',JSON.stringify(pattern))
+		});
+		document.addEventListener('mousedown',()=>{
+			isMouse = true;
+		});
+		document.addEventListener('mouseup',()=>{
+			isMouse = false;
+		})
+
+		function sleep(t){
+	        return new Promise(function(resolve){
+	            setTimeout(resolve, t);
+	        });
+	    }
+
+		async function path(map,start,end){
+			map = map.slice(0);
+			let queue = [start];
+
+			function distance([x,y]){
+				return (x-end[0]) ** 2 + (y - end[1]) ** 2;
+			}
+
+			let collection = new Sorted([start],(a,b)=>distance(b)-distance(a));
+
+			async function insert([x,y],pre){
+				if(map[100*y+x]!=0)
+					return;
+				if(x<0 || y < 0 || x >=100 || y >=100)
+					return;
+
+				map[100*y+x] = pre;
+				await sleep(5);
+
+				container.children[100*y+x].style.backgroundColor = 'red';
+				collection.insert([x,y]);
+
+			}
+
+				console.log(collection.data,'22')
+			while(collection.data.length){
+				let [x,y] = collection.take();
+				// console.log(x,y);
+
+				if(x=== end[0] && y === end[1]){
+					console.log('success')
+					collection = []
+					let path = [];
+					container.children[100*y+x].style.backgroundColor = 'green'
+					while(x!==start[0] || y!==start[1]){
+						path.push([x,y]);
+						[x,y] = map[100*y+x];
+
+						container.children[100*y+x].style.backgroundColor = 'green'
+					}
+					return;
+				}
+
+				await insert([x-1,y],[x,y]);
+				await insert([x+1,y],[x,y]);
+				await insert([x,y+1],[x,y]);
+				await insert([x,y-1],[x,y]);
+
+
+				await insert([x-1,y-1],[x,y]);
+				await insert([x+1,y+1],[x,y]);
+				await insert([x-1,y+1],[x,y]);
+				await insert([x+1,y-1],[x,y]);
+			}
+		}
+
+	</script>
+</body>
+</html>

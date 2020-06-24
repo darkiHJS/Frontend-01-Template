@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		.container {
+			width: 901px;
+			font-size: 0;
+			margin-left: 50px;
+		}
+		.cell {
+			width: 8px;
+			height: 8px;
+			margin-bottom: 1px;
+			margin-right: 1px;
+			background-color: #ccc;
+			display: inline-block;
+			font-size: 0;
+		}
+	</style>
+</head>
+<body>
+	<div class="container" id="container">
+
+	</div>
+	<button id="btn">save</button>
+	<button id="btnSave">clear</button>
+	<button id="btnResert">resert</button>
+
+	<script>
+		let pattern = new Array(100*100).fill(0);
+		let isMouse = false;
+		createCell();
+
+		function createCell(){
+			let isStoreSession = window.sessionStorage.getItem('pattern');
+			if(isStoreSession){
+				isStoreSession = JSON.parse(isStoreSession);
+				pattern = isStoreSession;
+			}
+			for(let i=0; i<100;i++){
+				for(let j=0; j<100;j++){
+					let cell = document.createElement('div');
+					let order = i*100+j;
+					let y = i;
+					cell.className = 'cell';
+					if(isStoreSession){
+						let number = isStoreSession[order];
+						if(number == 5){
+							cell.style.backgroundColor = '#000'
+						}
+					}
+
+					document.getElementById('container').appendChild(cell);
+					cell.addEventListener('mousemove',(event)=>{
+						if(isMouse){
+							cell.style.backgroundColor = '#000'
+							pattern[order] = 5;
+						}
+					})
+				}
+			}
+		}
+		document.getElementById('btn').addEventListener('click',()=>{
+			window.sessionStorage.setItem('pattern',JSON.stringify(pattern))
+		});
+		document.getElementById('btnSave').addEventListener('click',()=>{
+			window.sessionStorage.clear();
+		});
+		document.getElementById('btnResert').addEventListener('click',()=>{
+			pattern = new Array(100*100).fill(0);
+			window.sessionStorage.clear();
+		});
+		document.addEventListener('mousedown',()=>{
+			isMouse = true;
+			console.log('mousedown')
+		});
+		// document.getElementById('container').addEventListener('mousemove',(event)=>{
+		// 	console.log(event)
+		// })
+		document.addEventListener('mouseup',()=>{
+			isMouse = false;
+			console.log('mouseup')
+		})
+	</script>
+</body>
+</html>

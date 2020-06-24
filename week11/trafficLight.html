@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>traffic light</title>
+	<style>
+		div span {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			margin: 10px;
+			background-color: #ccc;
+			display: inline-block;
+		}
+		.green {
+			background-color: green;
+		}
+		.red {
+			background-color: red;
+		}
+		.yellow {
+			background-color: yellow;
+		}
+	</style>
+</head>
+<body>
+	<div id="container">
+		<span class="green"></span>
+		<span class="red"></span>
+		<span class="yellow"></span>
+	</div>
+	<script>
+		let list = document.querySelectorAll('span');
+		function green(){
+			list.forEach((item)=>{
+				item.classList.value = '';
+			});
+			list[0].classList.add('green')
+		}
+
+		function red(){
+			list.forEach((item)=>{
+				item.classList.value = '';
+			});
+			list[1].classList.add('red')
+		}
+
+		function yellow(){
+			list.forEach((item)=>{
+				item.classList.value = '';
+			});
+			list[2].classList.add('yellow')
+		}
+
+		let gT = 3000,
+			rT = 2000,
+			yT = 1000;
+		//传统timeout
+		function methods_1(){
+			green();
+			setTimeout(()=>{
+				red();
+			},gT)
+			setTimeout(()=>{
+				yellow();
+			},rT+gT);
+
+			setTimeout(()=>{
+				methods_1();
+			},rT+gT+yT);
+		}
+
+		//传统timeout--嵌套回调
+		function methods_2(){
+			green();
+			setTimeout(()=>{
+				red();
+				setTimeout(()=>{
+					yellow();
+					setTimeout(()=>{
+						methods_1();
+					},yT)
+				},rT)
+			},gT)
+		}
+
+		function delay(t){
+			return new Promise((resolve)=>{
+				setTimeout(()=>resolve(),t);
+			})
+		}
+
+		//传统promise
+		function methods_3(){
+			green();
+			delay(gT).then(()=>red());
+			delay(gT+rT).then(()=>yellow());
+			delay(gT+rT+yT).then(()=>methods_3());
+		};
+
+		//使用async,await
+		async function methods_4(){
+			green();
+			await delay(gT)
+			red();
+			await delay(rT)
+			yellow();
+			await delay(yT)
+			methods_4();
+		}
+		// methods_4();
+
+	</script>
+</body>
+</html>
